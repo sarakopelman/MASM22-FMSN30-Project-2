@@ -1,2 +1,3 @@
-# MASM22-Project-1
-Second project in the course.
+# MASM22-Project-2
+Second project in the course, FMSN30.
+By Sara Kopelman and Sara Stigmar. 
