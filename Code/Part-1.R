@@ -147,13 +147,7 @@ data |> count(vituse, lowplasma_hl) |>
 
 Logistic_Model_Vituse <- glm(lowplasma_01 ~ vituse, family = "binomial", data = data)
 
-
-# Use the regression model to calculate the linear predictor, the odds, and the probability of
-# having a low plasma β-carotene concentration, together with their respective 95 % confidence intervals, for each of the three vitamin use categories. Compare the result with the
-# probabilities in Table.1(c).
-
 summary(Logistic_Model_Vituse)
-
 
 cbind(beta = coef(Logistic_Model_Vituse),
   expbeta = exp(Logistic_Model_Vituse$coefficients),
@@ -171,11 +165,34 @@ cbind(beta = coef(Logistic_Model_Vituse),
 # e^(β_0 + β_1) = 7.54 * 0.219 = Odds for category 'Often' 
 # e^(β_0 + β_2) = 7.54 * 0.3853 = Odds for category 'Rarely' 
 
+Odds_Never <- exp(Logistic_Model_Vituse$coefficients["(Intercept)"])
+Odds_Often <- exp(Logistic_Model_Vituse$coefficients["(Intercept)"] + Logistic_Model_Vituse$coefficients["vituseOften"])
+Odds_Rarely <- exp(Logistic_Model_Vituse$coefficients["(Intercept)"] + Logistic_Model_Vituse$coefficients["vituseRarely"])
+
+#Probabilities 
+# p = odds / (1 + odds)
+p_Never <- Odds_Never / (1 + Odds_Never)
+p_Often <- Odds_Often / (1 + Odds_Often)
+p_Rarely <- Odds_Rarely / (1 + Odds_Rarely)
+
+#Tabulated!
+table_1d <- cbind(
+      OddsRatio = c(Odds_Never, Odds_Often, Odds_Rarely),
+      Probabilities = c(p_Never, p_Often, p_Rarely)) |>
+  round(digits = 4)
+
+rownames(table_1d) <- c("Never", "Often", "Rarely")
+table_1d
+
+
+# Use the regression model to calculate the linear predictor, the odds, and the probability of
+# having a low plasma β-carotene concentration, together with their respective 95 % confidence intervals, for each of the three vitamin use categories. Compare the result with the
+# probabilities in Table.1(c).
 
 cbind(beta = coef(Logistic_Model_Vituse),
-      expbeta = exp(Logistic_Model_Vituse$coefficients),
-      exp(confint(Logistic_Model_Vituse))) |>
+      confint(Logistic_Model_Vituse)) |>
   round(digits = 4)
+
 # ------------------------------------------------------------------------------------------------
 
 
