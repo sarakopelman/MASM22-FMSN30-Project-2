@@ -26,10 +26,10 @@ data$sex <- relevel(data$sex, ref = "Female")
 data <- data %>%
   mutate(vituse = factor(vituse,
                          levels = c(1, 2, 3),
-                         labels = c("Often", "Rarely", "No")))
+                         labels = c("Often", "Rarely", "Never")))
 
 # Set baseline
-data$vituse <- relevel(data$vituse, ref = "No")
+data$vituse <- relevel(data$vituse, ref = "Never")
 
 # Linear model with all variables
 Full_Linear_Model <- lm(log(betaplasma) ~ bmi + age + calories + 
@@ -124,7 +124,7 @@ data |> count(vituse, lowplasma_hl) |>
               values_from = n) |>
   mutate(p_low = low / (low + high )) |>
   mutate(odds_low = p_low / (1 - p_low)) |>
-  mutate(odds_ratio = odds_low / odds_low[vituse == "No"] )
+  mutate(odds_ratio = odds_low / odds_low[vituse == "Never"] )
 
 # SaraS kommentar: 
 # Eftersom |> används (istället för ->) sparas detta bara 
@@ -153,10 +153,29 @@ Logistic_Model_Vituse <- glm(lowplasma_01 ~ vituse, family = "binomial", data = 
 # probabilities in Table.1(c).
 
 summary(Logistic_Model_Vituse)
-coef(Logistic_Model_Vituse) 
 
 
+cbind(beta = coef(Logistic_Model_Vituse),
+  expbeta = exp(Logistic_Model_Vituse$coefficients),
+  exp(confint(Logistic_Model_Vituse))) |>
+  round(digits = 4)
 
+# The full model in vector form:
+# p_i = e^(x_i*β)/(1 + e^(x_i*β))
+
+#This is the full model:
+# p_i = e^(β_0 + x_1i*β_1 + x_2i*β_2)/(1 + e^(β_0 + x_1i*β_1 + x_2i*β_2))
+
+#From Table.1(d): 
+# e^(β_0) = 7.54 = Odds for reference category, Never
+# e^(β_0 + β_1) = 7.54 * 0.219 = Odds for category 'Often' 
+# e^(β_0 + β_2) = 7.54 * 0.3853 = Odds for category 'Rarely' 
+
+
+cbind(beta = coef(Logistic_Model_Vituse),
+      expbeta = exp(Logistic_Model_Vituse$coefficients),
+      exp(confint(Logistic_Model_Vituse))) |>
+  round(digits = 4)
 # ------------------------------------------------------------------------------------------------
 
 
