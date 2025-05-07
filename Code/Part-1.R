@@ -37,8 +37,8 @@ Full_Linear_Model <- lm(log(betaplasma) ~ bmi + age + calories +
                           smokstat + sex + vituse, data = data)
 
 
-# ---------------------------------------------------------------------------------------------
-# 1(a). We will now focus on whether the concentration of plasma β-carotene is low, or not, and
+# 1(a). ---------------------------------------------------------------------------------------------
+# We will now focus on whether the concentration of plasma β-carotene is low, or not, and
 # model the probability of having a low plasma β-carotene concentration as a function of the
 # background and/or dietary variables. In order to do this we need a suitable cut-off value. We
 # will use one that has been identified as suitable for separating between high or low risk of
@@ -150,8 +150,8 @@ Logistic_Model_Vituse <- glm(lowplasma_01 ~ vituse, family = "binomial", data = 
 summary(Logistic_Model_Vituse)
 
 cbind(beta = coef(Logistic_Model_Vituse),
-  expbeta = exp(Logistic_Model_Vituse$coefficients),
-  exp(confint(Logistic_Model_Vituse))) |>
+      expbeta = exp(Logistic_Model_Vituse$coefficients),
+      exp(confint(Logistic_Model_Vituse))) |>
   round(digits = 4)
 
 # The full model in vector form:
@@ -177,8 +177,8 @@ p_Rarely <- Odds_Rarely / (1 + Odds_Rarely)
 
 #Tabulated!
 table_1d <- cbind(
-      OddsRatio = c(Odds_Never, Odds_Often, Odds_Rarely),
-      Probabilities = c(p_Never, p_Often, p_Rarely)) |>
+  OddsRatio = c(Odds_Never, Odds_Often, Odds_Rarely),
+  Probabilities = c(p_Never, p_Often, p_Rarely)) |>
   round(digits = 4)
 
 rownames(table_1d) <- c("Never", "Often", "Rarely")
@@ -189,12 +189,78 @@ table_1d
 # having a low plasma β-carotene concentration, together with their respective 95 % confidence intervals, for each of the three vitamin use categories. Compare the result with the
 # probabilities in Table.1(c).
 
-cbind(beta = coef(Logistic_Model_Vituse),
-      confint(Logistic_Model_Vituse)) |>
+
+# Intervals for Beta
+# Intervals for Odds and Odds ratio (e^β)
+cbind(beta_hat = coef(Logistic_Model_Vituse),
+      CI_beta_hat = confint(Logistic_Model_Vituse),
+      odds_ratio = exp(coef(Logistic_Model_Vituse)),
+      CI_odds_ratio = exp(confint(Logistic_Model_Vituse))) |>
   round(digits = 4)
 
-# ------------------------------------------------------------------------------------------------
+# Linear predictor and probabilities
+data |> mutate(phat = predict(Logistic_Model_Vituse, type = "response")) -> data_pred
+
+data_pred <- cbind(data_pred,
+                   logit = predict(Logistic_Model_Vituse, se.fit = TRUE))
+data_pred |> mutate(logit.residual.scale = NULL) -> data_pred
+glimpse(data_pred)
+
+#Confidence interval for the linear predictor, i.e. the log-odds (betas)
+lambda <- qnorm(1 - 0.05/2)
+data_pred |> mutate(
+  logit.lwr = logit.fit - lambda*logit.se.fit,
+  logit.upr = logit.fit + lambda*logit.se.fit) -> data_pred
+
+#Confidence interval for the odds, i.e. e^betas
+data_pred |> mutate(
+  odds.lwr = exp(logit.lwr),
+  odds.upr = exp(logit.upr)) -> data_pred
+
+#Confidence interval for the probabilities, i.e. p = odds / ( 1 + odds )
+data_pred |> mutate(
+  p.lwr = odds.lwr/(1 + odds.lwr),
+  p.upr = odds.upr/(1 + odds.upr)) -> data_pred
+glimpse(data_pred)
+
+#Tabulated
+cbind(log_odds = data_pred$logit.fit,
+      Lower = data_pred$logit.lwr,
+      Upper = data_pred$logit.upr) |>
+  round(digits = 4)
 
 
+# 1(e). ------------------------------------------------------------------------------------------------
+# For Model.1(d), use a suitable test to determine whether there are any significant differences
+# between the vitamin use categories in the model. Report what type of test you use, the null
+# hypothesis H0, the test statistic, the asymptotic distribution of the test statistic when H0 is
+# true, the P-value and the conclusion. Explain why you choose that type of test and comment
+# on the result
+
+# We want to test whether the null hypothesis, H0: β_1 = β_2 = 0
+# I.e. if they differ from the reference category - if not we can not conclude
+# that vitamin usage impacts the model. Since we only have vitamin usage as one
+# categorical variable in the model we perform a global likelihood ratio test. 
+
+#Save variables
+model_sum <- summary(Logistic_Model_Vituse)
+null_deviance <- model_sum$null.deviance
+df_null <- model_sum$df.null
+deviance <- model_sum$deviance
+df_residual <- model_sum$df.residual
+
+#Calculate differences
+D_diff <- null_deviance - deviance
+df_diff <- df_null - df_residual
+chi2_alpha <- qchisq(p = 1 - 0.05, df = df_diff)
+Pvalue <- pchisq(q = D_diff, df = df_diff, lower.tail = FALSE)
+
+#I create a table and remove the vertical title using rownames, just to clean it up! 
+table_1e <- cbind(D_diff, df_diff, chi2_alpha, Pvalue)
+rownames(table_1e) <- c(" ")
+table_1e
+
+#Conclusion, we reject H_0! One or both of categories have significant impact 
+# on the probability of low betaplasma. 
 
 
