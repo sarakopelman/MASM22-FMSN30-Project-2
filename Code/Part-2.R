@@ -1,5 +1,7 @@
 #Part 2. 
 source("Code/Part-1.R")
+keep <- c("data")
+rm(list=setdiff(ls(),keep))
 # 2(a). Plot lowplasma_01 against bmi and add a moving average. Does the probability of having
 # low plasma beta-carotene increase or decrease with BMI? Does this agree with what you
 # found in Project 1?
@@ -7,7 +9,7 @@ source("Code/Part-1.R")
 ggplot(data, aes(bmi, lowplasma_01)) +
   geom_point() +
   xlab("Bmi") +
-  ylab("High Plasma") +
+  ylab("Low Plasma") +
   geom_smooth() +
   labs(title = "Low Plasma (=1) or Not low Plasma (=0) vs bmi") 
 
