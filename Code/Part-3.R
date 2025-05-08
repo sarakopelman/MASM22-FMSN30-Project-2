@@ -4,6 +4,7 @@ library(car)
 library(ggplot2)
 library(dplyr)
 library(tidyr)
+library(knitr)
 data <- read_excel("Data/carotene.xlsx")
 summary(data)
 
@@ -44,6 +45,7 @@ Full_Linear_Model <- lm(log(betaplasma) ~ bmi + age + calories +
                           fat + cholesterol + fiber + alcohol + betadiet + 
                           smokstat + sex + vituse, data = data)
 
+# ------------------------------------------------------------------------------
 # From Project 2 Part 1. 
 data |> mutate(
   lowplasma_01 = as.numeric(betaplasma < 225.5),
@@ -141,9 +143,101 @@ new_data$vituse_reduced <- factor(new_data$vituse_reduced)
 # the list of variables! 
 glimpse(new_data)
 
-#FORTSÄTT HÄRIFRÅN SARA!! 
-#DET ÄR BARA ATT JÄMFÖRA MODELLERNA PÅ SAMMA VIS SOM DU GJORDE LIKELIHOOD TESTET 
-#I UPPGIFT 1(E) - men nu paus! :D
+#Thus we create a new model, based on this two-factor collapsed version (reduced):
+Stepwise_From_Forward_Reduced <- glm(lowplasma_01 ~ betadiet + bmi + vituse_reduced 
+                                     + age + betadiet*bmi, family = "binomial", 
+                                     data = new_data)
+Stepwise_From_Forward_Reduced$coefficients
+
+#Save variables
+sum_1 <- summary(Stepwise_From_Forward)
+sum_2 <- summary(Stepwise_From_Forward_Reduced)
+deviance_1 <- sum_1$deviance
+deviance_2 <- sum_2$deviance
+df_1 <- sum_1$df.residual
+df_2 <- sum_2$df.residual
+
+#Calculate differences
+D_diff <- deviance_2 - deviance_1
+df_diff <- df_2 - df_1
+chi2_alpha <- qchisq(p = 1 - 0.05, df = df_diff)
+Pvalue <- pchisq(q = D_diff, df = df_diff, lower.tail = FALSE)
+
+#I create a table and remove the vertical title using rownames, just to clean it up! 
+table_1e <- cbind(D_diff, df_diff, chi2_alpha, Pvalue)
+rownames(table_1e) <- c(" ")
+table_1e
+
+# Task: 
+# Report the name of the test, the null hypothesis, the value of the test statistic,
+# its distribution when H0 is true, the P-value and the conclusion.
+
+# 1. Name of test: Partial likelihood ratio test 
+# 2. Null Hypothesis, H_0: Beta_often = Beta_Rarely. In words, that the model with 
+#    one dummy variable Beta_Used is enough. 
+# 3. The value of the test statistic is D = 0.34999 ~ 0.35
+# 4. The distribution is Chi-squared
+# 5. The P-value is P = 0.55411 ~ 0.55
+# 6. The conclusion is to not reject H_0 since Pvalue > 0.05. I.e. we cannot conclude
+#    that the full model is significantly better than the reduced. 
+
+#Task:
+# Present a table, Table.3(b), with the estimated β-parameters in each of the 
+# different models (you will end up with at least one and at most six different models). 
+# Use one row for each variable that is present in at least one of the models, 
+# and one column of estimates for each of the models.
+
+# Models
+# ----------------
+Full_Logistic_Model #All variables, including calories
+Logistic_Model #All variables, excluding calories, but including all interaction terms
+Null_Model #No variables 
+Stepwise_From_Backward #Backwards elimination from the full model 
+Stepwise_From_Forward # Forward selection from the null model
+Stepwise_From_Forward_Reduced # Forward selection from the null model without the 
+
+
+# Hint: 
+# You can create one dataframe for each model and then join them into one dataframe:
+df1 <- data.frame(variable = names(Full_Logistic_Model$coefficients),
+                    b_model1 = Full_Logistic_Model$coefficients, row.names = NULL)
+df2 <- data.frame(variable = names(Logistic_Model$coefficients),
+                  b_model2 = Logistic_Model$coefficients, row.names = NULL)
+df3 <- data.frame(variable = names(Null_Model$coefficients),
+                  b_model3 = Null_Model$coefficients, row.names = NULL)
+df4 <- data.frame(variable = names(Stepwise_From_Backward$coefficients),
+                  b_model4 = Stepwise_From_Backward$coefficients, row.names = NULL)
+df5 <- data.frame(variable = names(Stepwise_From_Forward$coefficients),
+                  b_model5 = Stepwise_From_Forward$coefficients, row.names = NULL)
+df6 <- data.frame(variable = names(Stepwise_From_Forward_Reduced$coefficients),
+                  b_model6 = Stepwise_From_Forward_Reduced$coefficients, row.names = NULL)
+All_Models <- full_join(df1, df2) |> full_join(df3) |> full_join(df4) |> full_join(df5) |> full_join(df6)
+
+#Writes a table:
+table_3b <- kable(All_Models, caption = "Table 3(b): Estimated β-parameters in each of the six models")
+table_3b
+#Exported to excel:
+#write.csv(All_Models, "Table_3b.csv", row.names = FALSE)
+
+
+#---------------------- TO-DO: --------------------------------------
+# Task:
+# Comment on any interesting differences between the models.
+# -------------------------------------------------------------------
+
+
+
+# 3(c). ------------------------------------------------------------------------
+# Calculate McFadden’s adjusted pseudo R2, AIC and BIC for all models from Table.3(b), 
+# and indicate which model is best, according to each of these criteria.
+
+
+
+
+
+
+
+
 
 
 
