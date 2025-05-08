@@ -231,7 +231,87 @@ table_3b
 # Calculate McFadden’s adjusted pseudo R2, AIC and BIC for all models from Table.3(b), 
 # and indicate which model is best, according to each of these criteria.
 
+aic <- AIC(Full_Logistic_Model, Logistic_Model, Null_Model, Stepwise_From_Backward, 
+           Stepwise_From_Forward, Stepwise_From_Forward_Reduced)
+bic <- BIC(Full_Logistic_Model, Logistic_Model, Null_Model, Stepwise_From_Backward, 
+           Stepwise_From_Forward, Stepwise_From_Forward_Reduced)
 
+#Create dataframe for the AIC- and BIC
+collect.AICetc <- data.frame(aic, bic)
+
+#Remove unnecessary df.1 column
+collect.AICetc |> mutate(df.1 = NULL) -> collect.AICetc
+
+#Calculate Psuedo R
+collect.AICetc |> mutate(
+  loglik =  c(logLik(Full_Logistic_Model)[1],
+              logLik(Logistic_Model)[1],
+              logLik(Null_Model)[1],
+              logLik(Stepwise_From_Backward)[1],
+              logLik(Stepwise_From_Forward)[1],
+              logLik(Stepwise_From_Forward_Reduced)[1])) -> collect.AICetc
+
+#Calculate McFadden's adjusted psuedo R2
+    
+    #Save loglikelihood for null model:
+    lnL0 <- logLik(Null_Model)[1]
+    
+collect.AICetc |> mutate(
+  R2McF = 1 - loglik/lnL0,
+  R2McF.adj = 1 - (loglik - (df - 1)/2)/lnL0) -> collect.AICetc
+
+#Show result
+collect.AICetc
+
+# ------------------------------------------------------------------
+#TODO: INDICATE WHICH IS THE BEST MODEL BASED ON THE RESULT ^^^^^
+# ------------------------------------------------------------------
+
+
+
+
+
+# 3(d). ------------------------------------------------------------------------
+# Calculate the standardized deviance residuals for the model with the best AIC 
+# and the model with the best BIC, from 3(c). 
+
+
+
+# Model with the best (lowest) AIC: Stepwise_From_Backward (AIC = 298.1199)
+# Model with the best (lowest) BIC: Stepwise_From_Forward_Reduced (BIC = 322-5014)
+
+# Standardized residuals for respective model 
+res_Stepwise_From_Backward <- rstandard(Stepwise_From_Backward, type = "deviance")
+res_Stepwise_From_Forward_Reduced <- rstandard(Stepwise_From_Forward_Reduced, type = "deviance")
+
+lp_Stepwise_From_Backward <- predict(Stepwise_From_Backward, type = "link")
+lp_Stepwise_From_Forward_Reduced <- predict(Stepwise_From_Forward_Reduced, type = "link")
+
+
+# Task:
+# Plot the standardised deviance residuals, with suitable reference lines, 
+# against the linear predictors for each of the two models. Also make QQ-plots 
+# for the residuals. Discuss which of the models has the best behaved residuals.
+
+# Plot 1: Residuals vs. Linear Predictor
+par(mfrow = c(2, 2))  # 2x2 plot layout
+
+plot(lp_Stepwise_From_Backward, res_Stepwise_From_Backward,
+     main = "Backward Model: Residuals vs. Linear Predictor",
+     xlab = "Linear Predictor", ylab = "Standardized Deviance Residuals")
+abline(h = 0, col = "red", lty = 2)
+
+plot(lp_Stepwise_From_Forward_Reduced, res_Stepwise_From_Forward_Reduced,
+     main = "Forward (Reduced) Model: Residuals vs. Linear Predictor",
+     xlab = "Linear Predictor", ylab = "Standardized Deviance Residuals")
+abline(h = 0, col = "red", lty = 2)
+
+# Plot 2: QQ-plots
+qqnorm(res_Stepwise_From_Backward, main = "Backward Model: QQ-Plot")
+qqline(res_Stepwise_From_Backward, col = "blue")
+
+qqnorm(res_Stepwise_From_Forward_Reduced, main = "Forward (Reduced) Model: QQ-Plot")
+qqline(res_Stepwise_From_Forward_Reduced, col = "blue")
 
 
 
