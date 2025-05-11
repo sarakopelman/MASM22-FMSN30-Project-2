@@ -115,7 +115,8 @@ Stepwise_From_Forward <- step(Forward_Selection_Model,
                               scope = list(lower = formula(Null_Model),
                                            upper = formula(Logistic_Model)),
                               k = log(nobs(Forward_Selection_Model)))
-
+#NOTICE! This is the same model as Forward_Selection, i.e. they conclude the same
+#model : Forward_Selection_Model = Stepwise_From_Forward
 
 # Task: 
 # If any of the resulting Stepwise models contain categorical variables, 
@@ -189,9 +190,11 @@ table_1e
 
 # Models
 # ----------------
-Full_Logistic_Model #All variables, including calories
+#Full_Logistic_Model #All variables, including calories
 Logistic_Model #All variables, excluding calories, but including all interaction terms
 Null_Model #No variables 
+Backwards_Elimination_Model
+#Forward_Selection_Model
 Stepwise_From_Backward #Backwards elimination from the full model 
 Stepwise_From_Forward # Forward selection from the null model
 Stepwise_From_Forward_Reduced # Forward selection from the null model without the 
@@ -199,25 +202,27 @@ Stepwise_From_Forward_Reduced # Forward selection from the null model without th
 
 # Hint: 
 # You can create one dataframe for each model and then join them into one dataframe:
-df1 <- data.frame(variable = names(Full_Logistic_Model$coefficients),
-                    b_model1 = Full_Logistic_Model$coefficients, row.names = NULL)
-df2 <- data.frame(variable = names(Logistic_Model$coefficients),
-                  b_model2 = Logistic_Model$coefficients, row.names = NULL)
-df3 <- data.frame(variable = names(Null_Model$coefficients),
-                  b_model3 = Null_Model$coefficients, row.names = NULL)
-df4 <- data.frame(variable = names(Stepwise_From_Backward$coefficients),
-                  b_model4 = Stepwise_From_Backward$coefficients, row.names = NULL)
-df5 <- data.frame(variable = names(Stepwise_From_Forward$coefficients),
-                  b_model5 = Stepwise_From_Forward$coefficients, row.names = NULL)
+#df1 <- data.frame(variable = names(Full_Logistic_Model$coefficients),
+#                    b_model1 = Full_Logistic_Model$coefficients, row.names = NULL)
+df1 <- data.frame(variable = names(Logistic_Model$coefficients),
+                  b_model1 = Logistic_Model$coefficients, row.names = NULL)
+df2 <- data.frame(variable = names(Null_Model$coefficients),
+                  b_model2 = Null_Model$coefficients, row.names = NULL)
+df3 <- data.frame(variable = names(Backwards_Elimination_Model$coefficients),
+                  b_model3 = Backwards_Elimination_Model$coefficients, row.names = NULL)
+df4 <- data.frame(variable = names(Stepwise_From_Forward$coefficients),
+                  b_model4 = Stepwise_From_Forward$coefficients, row.names = NULL)
+df5 <- data.frame(variable = names(Stepwise_From_Backward$coefficients),
+                  b_model5 = Stepwise_From_Backward$coefficients, row.names = NULL)
 df6 <- data.frame(variable = names(Stepwise_From_Forward_Reduced$coefficients),
                   b_model6 = Stepwise_From_Forward_Reduced$coefficients, row.names = NULL)
-All_Models <- full_join(df1, df2) |> full_join(df3) |> full_join(df4) |> full_join(df5) |> full_join(df6)
+All_Models <- full_join(df2, df3) |> full_join(df4) |> full_join(df5) |> full_join(df6)
 
 #Writes a table:
 table_3b <- kable(All_Models, caption = "Table 3(b): Estimated β-parameters in each of the six models")
 table_3b
 #Exported to excel:
-#write.csv(All_Models, "Table_3b.csv", row.names = FALSE)
+#write.csv(All_Models, "Table_3b_ny.csv", row.names = FALSE)
 
 
 #---------------------- TO-DO: --------------------------------------
@@ -231,10 +236,10 @@ table_3b
 # Calculate McFadden’s adjusted pseudo R2, AIC and BIC for all models from Table.3(b), 
 # and indicate which model is best, according to each of these criteria.
 
-aic <- AIC(Full_Logistic_Model, Logistic_Model, Null_Model, Stepwise_From_Backward, 
-           Stepwise_From_Forward, Stepwise_From_Forward_Reduced)
-bic <- BIC(Full_Logistic_Model, Logistic_Model, Null_Model, Stepwise_From_Backward, 
-           Stepwise_From_Forward, Stepwise_From_Forward_Reduced)
+aic <- AIC(Logistic_Model, Null_Model, Backwards_Elimination_Model, 
+           Stepwise_From_Forward, Stepwise_From_Backward, Stepwise_From_Forward_Reduced)
+bic <- BIC(Logistic_Model, Null_Model, Backwards_Elimination_Model, 
+           Stepwise_From_Forward, Stepwise_From_Backward, Stepwise_From_Forward_Reduced)
 
 #Create dataframe for the AIC- and BIC
 collect.AICetc <- data.frame(aic, bic)
@@ -244,11 +249,11 @@ collect.AICetc |> mutate(df.1 = NULL) -> collect.AICetc
 
 #Calculate Psuedo R
 collect.AICetc |> mutate(
-  loglik =  c(logLik(Full_Logistic_Model)[1],
-              logLik(Logistic_Model)[1],
+  loglik =  c(logLik(Logistic_Model)[1],
               logLik(Null_Model)[1],
-              logLik(Stepwise_From_Backward)[1],
+              logLik(Backwards_Elimination_Model)[1],
               logLik(Stepwise_From_Forward)[1],
+              logLik(Stepwise_From_Backward)[1],
               logLik(Stepwise_From_Forward_Reduced)[1])) -> collect.AICetc
 
 #Calculate McFadden's adjusted psuedo R2
@@ -297,20 +302,20 @@ lp_Stepwise_From_Forward_Reduced <- predict(Stepwise_From_Forward_Reduced, type 
 par(mfrow = c(2, 2))  # 2x2 plot layout
 
 plot(lp_Stepwise_From_Backward, res_Stepwise_From_Backward,
-     main = "Backward Model: Residuals vs. Linear Predictor",
+     main = "Model 5: Residuals vs. Linear Predictor",
      xlab = "Linear Predictor", ylab = "Standardized Deviance Residuals")
 abline(h = 0, col = "red", lty = 2)
 
 plot(lp_Stepwise_From_Forward_Reduced, res_Stepwise_From_Forward_Reduced,
-     main = "Forward (Reduced) Model: Residuals vs. Linear Predictor",
+     main = "Model 6: Residuals vs. Linear Predictor",
      xlab = "Linear Predictor", ylab = "Standardized Deviance Residuals")
 abline(h = 0, col = "red", lty = 2)
 
 # Plot 2: QQ-plots
-qqnorm(res_Stepwise_From_Backward, main = "Backward Model: QQ-Plot")
+qqnorm(res_Stepwise_From_Backward, main = "Model 5: QQ-Plot")
 qqline(res_Stepwise_From_Backward, col = "blue")
 
-qqnorm(res_Stepwise_From_Forward_Reduced, main = "Forward (Reduced) Model: QQ-Plot")
+qqnorm(res_Stepwise_From_Forward_Reduced, main = "Model 6: QQ-Plot")
 qqline(res_Stepwise_From_Forward_Reduced, col = "blue")
 
 
