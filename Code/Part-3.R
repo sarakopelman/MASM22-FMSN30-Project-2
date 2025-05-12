@@ -298,34 +298,68 @@ lp_Stepwise_From_Forward_Reduced <- predict(Stepwise_From_Forward_Reduced, type 
 # against the linear predictors for each of the two models. Also make QQ-plots 
 # for the residuals. Discuss which of the models has the best behaved residuals.
 
-# Plot 1: Residuals vs. Linear Predictor
-par(mfrow = c(2, 2))  # 2x2 plot layout
-
-plot(lp_Stepwise_From_Backward, res_Stepwise_From_Backward,
-     main = "Model 5: Residuals vs. Linear Predictor",
-     xlab = "Linear Predictor", ylab = "Standardized Deviance Residuals")
-abline(h = 0, col = "red", lty = 2)
-
-plot(lp_Stepwise_From_Forward_Reduced, res_Stepwise_From_Forward_Reduced,
-     main = "Model 6: Residuals vs. Linear Predictor",
-     xlab = "Linear Predictor", ylab = "Standardized Deviance Residuals")
-abline(h = 0, col = "red", lty = 2)
-
+#UPDATED: Plot 1 has been updated with colour, see further below
+      # Plot 1: Residuals vs. Linear Predictor
+      par(mfrow = c(2, 2))  # 2x2 plot layout
+      
+      plot(lp_Stepwise_From_Backward, res_Stepwise_From_Backward,
+           main = "Model 5: Residuals vs. Linear Predictor",
+           xlab = "Linear Predictor", ylab = "Standardized Deviance Residuals")
+      abline(h = 0, col = "red", lty = 2)
+      
+      plot(lp_Stepwise_From_Forward_Reduced, res_Stepwise_From_Forward_Reduced,
+           main = "Model 6: Residuals vs. Linear Predictor",
+           xlab = "Linear Predictor", ylab = "Standardized Deviance Residuals")
+      abline(h = 0, col = "red", lty = 2)
+      
 # Plot 2: QQ-plots
 qqnorm(res_Stepwise_From_Backward, main = "Model 5: QQ-Plot")
 qqline(res_Stepwise_From_Backward, col = "blue")
-
+      
 qqnorm(res_Stepwise_From_Forward_Reduced, main = "Model 6: QQ-Plot")
 qqline(res_Stepwise_From_Forward_Reduced, col = "blue")
 
 
 
 
+#UPDATED: Second try for plot 1 in order to get color-coded 
+
+#Plot 1:
+Model_5_infl <- influence(Stepwise_From_Backward)
+Model_6_infl <- influence(Stepwise_From_Forward_Reduced)
+
+data_pred <- cbind(data,
+                   xbeta5 = predict(Stepwise_From_Backward),
+                   xbeta6 = predict(Stepwise_From_Forward_Reduced),
+                   v5 = Model_5_infl$hat,
+                   v6 = Model_6_infl$hat)
 
 
+data_pred |> mutate(devresid5 = Model_5_infl$dev.res,
+                    stddevresid5 = devresid5/sqrt(1 - v5)) -> data_pred
+data_pred |> mutate(devresid6 = Model_6_infl$dev.res,
+                    stddevresid6 = devresid6/sqrt(1 - v6)) -> data_pred
 
+ggplot(data_pred, aes(x = xbeta5, 
+                      y = stddevresid5, 
+                      color = as.factor(lowplasma_01))) +
+  geom_point() +
+  geom_hline(yintercept = c(-3, -2, 0, 2, 3), 
+             linetype = c("dotted", "dashed", "solid", "dashed", "dotted"),
+             linewidth = 1) +
+  labs(title = "Standardised deviance residuals vs linear predictor",
+       x = "Linear predictor, xb", y = "Standardized deviance residuals, devstd",
+       color = "Y")
 
-
-
+ggplot(data_pred, aes(x = xbeta6, 
+                      y = stddevresid6, 
+                      color = as.factor(lowplasma_01))) +
+  geom_point() +
+  geom_hline(yintercept = c(-3, -2, 0, 2, 3), 
+             linetype = c("dotted", "dashed", "solid", "dashed", "dotted"),
+             linewidth = 1) +
+  labs(title = "Standardised deviance residuals vs linear predictor",
+       x = "Linear predictor, xb", y = "Standardized deviance residuals, devstd",
+       color = "Y")
 
 
