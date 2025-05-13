@@ -38,7 +38,7 @@ roc_0 <- roc(lowplasma_hl ~ p_0, data = low_plasma_pred, levels = c("high", "low
 roc_back <- roc(lowplasma_hl ~ pred_back, data = low_plasma_pred, levels = c("high", "low"))
 roc_for <- roc(lowplasma_hl ~ pred_for, data = low_plasma_pred, levels = c("high", "low"))
 
-ggroc(list(null = roc_0, back = roc_back, forw = roc_for)) +
+ggroc(list(null = roc_0, A = roc_back, B = roc_for)) +
   coord_fixed() +
   labs(title = "ROC-curves for models and the null model")
 
@@ -52,7 +52,8 @@ roc.test(roc_back,roc_for)
 cutback <- coords(roc_back,"best",best.method="closest.topleft")$threshold
 cutfor <- coords(roc_for,"best",best.method="closest.topleft")$threshold
 
-
+cutback
+cutfor
 data |> mutate(pred_for = predict(Stepwise_From_Backward, type = "response"),
                pred_back = predict(Stepwise_From_Forward_Reduced, type = "response"),
                yhat_for = factor(pred_for > cutfor,
@@ -75,3 +76,15 @@ cm_for2 <- confusionMatrix(
 
 cm_back2
 cm_for2
+
+Logistic_model <- Stepwise_From_Forward_Reduced
+summary(Logistic_model)
+bhat <- Logistic_model$coefficients
+ci.beta <- confint(Logistic_model)
+#Coeffiencts
+cbind(b = bhat, ci.beta, `exp(b)` = exp(bhat), exp(ci.beta)) |> round(digits = 2)
+#OR
+# exp(beta0), exp(beta1)
+or = exp(bhat)
+ci.or <- exp(ci.beta)
+cbind(`exp(bhat)` = or, ci.or) |> round(digits = 2)
